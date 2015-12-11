@@ -10,6 +10,19 @@ import UIKit
 
 public class B68UIFloatLabelTextField: UITextField {
   
+    
+    
+    var caption: String? {
+        didSet {
+            self.floatingLabel.text = self.caption
+        }
+    }
+    
+    enum CaptionPosition {
+        case Above
+        case Left
+    }
+    var captionPosition = CaptionPosition.Above
   /**
   The floating label that is displayed above the text field when there is other
   text in the text field.
@@ -47,7 +60,7 @@ public class B68UIFloatLabelTextField: UITextField {
       floatingLabel.font = UIFont.preferredFontForTextStyle(placeHolderTextSize)
     }
   }
-  
+
   /**
   Used to cache the placeholder string.
   */
@@ -112,6 +125,7 @@ public class B68UIFloatLabelTextField: UITextField {
   
   //MARK: Setup
   private func setup() {
+    self.clipsToBounds = false
     setupObservers()
     setupFloatingLabel()
     applyFonts()
@@ -140,8 +154,9 @@ public class B68UIFloatLabelTextField: UITextField {
   
   private func applyFonts() {
     
-    // set floatingLabel to have the same font as the textfield
-    floatingLabel.font = UIFont(name: font!.fontName, size: UIFont.preferredFontForTextStyle(placeHolderTextSize).pointSize)
+    if let textStyle = self.font?.fontDescriptor().fontAttributes()["NSCTFontUIUsageAttribute"] as? String {
+        font = UIFont.preferredFontForTextStyle(textStyle)
+    }
   }
   
   private func setupViewDefaults() {
@@ -169,12 +184,25 @@ public class B68UIFloatLabelTextField: UITextField {
   
   func showFloatingLabelWithAnimation(isAnimated : Bool)
   {
-    let fl_frame = CGRectMake(
-      horizontalPadding,
-      0,
-      CGRectGetWidth(self.floatingLabel.frame),
-      CGRectGetHeight(self.floatingLabel.frame)
-    )
+    var fl_frame: CGRect
+    switch self.captionPosition {
+    case .Above:
+        fl_frame = CGRectMake(
+            horizontalPadding,
+            -CGRectGetHeight(self.floatingLabel.frame) - 5,
+            CGRectGetWidth(self.floatingLabel.frame),
+            CGRectGetHeight(self.floatingLabel.frame)
+        )
+    case .Left:
+        fl_frame = CGRectMake(
+            
+            
+            -self.floatingLabel.bounds.width - self.horizontalPadding,
+            self.floatingLabel.frame.origin.y,
+            CGRectGetWidth(self.floatingLabel.frame),
+            CGRectGetHeight(self.floatingLabel.frame)
+        )
+    }
     if (isAnimated) {
       let options: UIViewAnimationOptions = [UIViewAnimationOptions.BeginFromCurrentState, UIViewAnimationOptions.CurveEaseOut]
       UIView.animateWithDuration(0.2, delay: 0, options: options, animations: {
@@ -185,6 +213,11 @@ public class B68UIFloatLabelTextField: UITextField {
       self.floatingLabel.alpha = 1
       self.floatingLabel.frame = fl_frame
     }
+    
+    // Set the floating label's color to the placeholder's color if defined as an attributed string attribute
+    let placeholderColor: AnyObject? = self.attributedPlaceholder?.attribute(NSForegroundColorAttributeName, atIndex: 0, effectiveRange: nil)
+    self.floatingLabel.textColor = placeholderColor as? UIColor ?? self.floatingLabel.textColor
+
   }
   
   func hideFloatingLabel () {
@@ -224,7 +257,7 @@ public class B68UIFloatLabelTextField: UITextField {
   private func floatingLabelInsets() -> UIEdgeInsets {
     floatingLabel.sizeToFit()
     return UIEdgeInsetsMake(
-      floatingLabel.font.lineHeight,
+      0,
       horizontalPadding,
       0,
       horizontalPadding)
@@ -255,7 +288,7 @@ public class B68UIFloatLabelTextField: UITextField {
   func textFieldTextDidBeginEditing(notification : NSNotification) {
     floatingLabel.textColor = activeTextColorfloatingLabel
   }
-  
+
   //MARK: Font Size Change Oberver
   private func fontSizeDidChange (notification : NSNotification) {
     applyFonts()
